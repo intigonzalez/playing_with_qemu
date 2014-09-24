@@ -1,0 +1,1357 @@
+     1                                  SEGMENT .text
+     2                                  
+     3                                  GLOBAL low_level_clock_handler
+     4                                  GLOBAL low_level_page_fault_handler
+     5                                  GLOBAL low_level_general_protection_handler
+     6                                  
+     7                                  
+     8                                  GLOBAL low_level_sys_call
+     9                                  
+    10                                  GLOBAL activate_multitasking , puntero
+    11                                  
+    12                                  %macro DefineGlobalSymbols 1
+    13                                  	%assign interruptId 0
+    14                                  	%rep 20
+    15                                  		GLOBAL %1interruptId
+    16                                  		%assign interruptId interruptId+1
+    17                                  	%endrep
+    18                                  %endmacro
+    19                                  
+    20                                  DefineGlobalSymbols low_level_
+    21                              <1>  %assign interruptId 0
+    22                              <1>  %rep 20
+    23                              <1>  GLOBAL %1interruptId
+    24                              <1>  %assign interruptId interruptId+1
+    25                              <1>  %endrep
+    26                              <2>  GLOBAL %1interruptId
+    27                              <2>  %assign interruptId interruptId+1
+    28                              <2>  GLOBAL %1interruptId
+    29                              <2>  %assign interruptId interruptId+1
+    30                              <2>  GLOBAL %1interruptId
+    31                              <2>  %assign interruptId interruptId+1
+    32                              <2>  GLOBAL %1interruptId
+    33                              <2>  %assign interruptId interruptId+1
+    34                              <2>  GLOBAL %1interruptId
+    35                              <2>  %assign interruptId interruptId+1
+    36                              <2>  GLOBAL %1interruptId
+    37                              <2>  %assign interruptId interruptId+1
+    38                              <2>  GLOBAL %1interruptId
+    39                              <2>  %assign interruptId interruptId+1
+    40                              <2>  GLOBAL %1interruptId
+    41                              <2>  %assign interruptId interruptId+1
+    42                              <2>  GLOBAL %1interruptId
+    43                              <2>  %assign interruptId interruptId+1
+    44                              <2>  GLOBAL %1interruptId
+    45                              <2>  %assign interruptId interruptId+1
+    46                              <2>  GLOBAL %1interruptId
+    47                              <2>  %assign interruptId interruptId+1
+    48                              <2>  GLOBAL %1interruptId
+    49                              <2>  %assign interruptId interruptId+1
+    50                              <2>  GLOBAL %1interruptId
+    51                              <2>  %assign interruptId interruptId+1
+    52                              <2>  GLOBAL %1interruptId
+    53                              <2>  %assign interruptId interruptId+1
+    54                              <2>  GLOBAL %1interruptId
+    55                              <2>  %assign interruptId interruptId+1
+    56                              <2>  GLOBAL %1interruptId
+    57                              <2>  %assign interruptId interruptId+1
+    58                              <2>  GLOBAL %1interruptId
+    59                              <2>  %assign interruptId interruptId+1
+    60                              <2>  GLOBAL %1interruptId
+    61                              <2>  %assign interruptId interruptId+1
+    62                              <2>  GLOBAL %1interruptId
+    63                              <2>  %assign interruptId interruptId+1
+    64                              <2>  GLOBAL %1interruptId
+    65                              <2>  %assign interruptId interruptId+1
+    66                                  
+    67                                  EXTERN high_level_clock_handler ; handler del reloj
+    68                                  EXTERN high_level_page_fault_handler ; un handler de fallos de pagina
+    69                                  EXTERN high_level_general_protection_handler
+    70                                  EXTERN high_level_handler,high_level_handler_faults
+    71                                  
+    72                                  EXTERN microkernel_syscall
+    73                                  
+    74                                  
+    75                                  EXTERN activeThread ; este es el hilo activo
+    76                                  EXTERN _hwParameters;
+    77                                  
+    78                                  low_level_0:
+    79 00000000 55                              push ebp
+    80 00000001 89E5                    				mov ebp, esp
+    81 00000003 60                      				pusha
+    82 00000004 B800000000                      mov eax , 0
+    83 00000009 E928010000                      jmp _manage
+    84                                  low_level_1:
+    85 0000000E 55                              push ebp
+    86 0000000F 89E5                    				mov ebp, esp
+    87 00000011 60                      				pusha
+    88 00000012 B801000000                      mov eax , 1
+    89 00000017 E91A010000                      jmp _manage
+    90                                  low_level_2:
+    91 0000001C 55                              push ebp
+    92 0000001D 89E5                    				mov ebp, esp
+    93 0000001F 60                      				pusha
+    94 00000020 B802000000                      mov eax , 2
+    95 00000025 E90C010000                      jmp _manage
+    96                                  low_level_3:
+    97 0000002A 55                              push ebp
+    98 0000002B 89E5                    				mov ebp, esp
+    99 0000002D 60                      				pusha
+   100 0000002E B803000000                      mov eax , 3
+   101 00000033 E9FE000000                      jmp _manage
+   102                                  low_level_4:
+   103 00000038 55                              push ebp
+   104 00000039 89E5                    				mov ebp, esp
+   105 0000003B 60                      				pusha
+   106 0000003C B804000000                      mov eax , 4
+   107 00000041 E9F0000000                      jmp _manage
+   108                                  low_level_5:
+   109 00000046 55                              push ebp
+   110 00000047 89E5                    				mov ebp, esp
+   111 00000049 60                      				pusha
+   112 0000004A B805000000                      mov eax , 5
+   113 0000004F E9E2000000                      jmp _manage
+   114                                  low_level_6:
+   115 00000054 55                              push ebp
+   116 00000055 89E5                    				mov ebp, esp
+   117 00000057 60                      				pusha
+   118 00000058 B806000000                      mov eax , 6
+   119 0000005D E9D4000000                      jmp _manage
+   120                                  low_level_7:
+   121 00000062 55                              push ebp
+   122 00000063 89E5                    				mov ebp, esp
+   123 00000065 60                      				pusha
+   124 00000066 B807000000                      mov eax , 7
+   125 0000006B E9C6000000                      jmp _manage
+   126                                  low_level_8:
+   127 00000070 55                              push ebp
+   128 00000071 89E5                    				mov ebp, esp
+   129 00000073 60                      				pusha
+   130 00000074 B808000000                      mov eax , 8
+   131 00000079 E99A000000                      jmp _manage_with_error_code
+   132                                  low_level_9:
+   133 0000007E 55                              push ebp
+   134 0000007F 89E5                    				mov ebp, esp
+   135 00000081 60                      				pusha
+   136 00000082 B809000000                      mov eax , 9
+   137 00000087 E9AA000000                      jmp _manage
+   138                                  low_level_10:
+   139 0000008C 55                              push ebp
+   140 0000008D 89E5                    				mov ebp, esp
+   141 0000008F 60                      				pusha
+   142 00000090 B80A000000                      mov eax , 10
+   143 00000095 E97E000000                      jmp _manage_with_error_code
+   144                                  low_level_11:
+   145 0000009A 55                              push ebp
+   146 0000009B 89E5                    				mov ebp, esp
+   147 0000009D 60                      				pusha
+   148 0000009E B80B000000                      mov eax , 11
+   149 000000A3 E970000000                      jmp _manage_with_error_code
+   150                                  low_level_12:
+   151 000000A8 55                              push ebp
+   152 000000A9 89E5                    				mov ebp, esp
+   153 000000AB 60                      				pusha
+   154 000000AC B80C000000                      mov eax , 12
+   155 000000B1 E962000000                      jmp _manage_with_error_code
+   156                                  low_level_13:
+   157 000000B6 55                              push ebp
+   158 000000B7 89E5                    				mov ebp, esp
+   159 000000B9 60                      				pusha
+   160 000000BA B80D000000                      mov eax , 13
+   161 000000BF E954000000                      jmp _manage_with_error_code
+   162                                  low_level_14:
+   163 000000C4 55                              push ebp
+   164 000000C5 89E5                    				mov ebp, esp
+   165 000000C7 60                      				pusha
+   166 000000C8 B80E000000                      mov eax , 14
+   167 000000CD E946000000                      jmp _manage_with_error_code
+   168                                  low_level_15:
+   169 000000D2 55                              push ebp
+   170 000000D3 89E5                    				mov ebp, esp
+   171 000000D5 60                      				pusha
+   172 000000D6 B80F000000                      mov eax , 15
+   173 000000DB E956000000                      jmp _manage
+   174                                  low_level_16:
+   175 000000E0 55                              push ebp
+   176 000000E1 89E5                    				mov ebp, esp
+   177 000000E3 60                      				pusha
+   178 000000E4 B810000000                      mov eax , 16
+   179 000000E9 E948000000                      jmp _manage
+   180                                  low_level_17:
+   181 000000EE 55                              push ebp
+   182 000000EF 89E5                    				mov ebp, esp
+   183 000000F1 60                      				pusha
+   184 000000F2 B811000000                      mov eax , 17
+   185 000000F7 E93A000000                      jmp _manage
+   186                                  low_level_18:
+   187 000000FC 55                              push ebp
+   188 000000FD 89E5                    				mov ebp, esp
+   189 000000FF 60                      				pusha
+   190 00000100 B812000000                      mov eax , 18
+   191 00000105 E92C000000                      jmp _manage
+   192                                  low_level_19:
+   193 0000010A 55                              push ebp
+   194 0000010B 89E5                    				mov ebp, esp
+   195 0000010D 60                      				pusha
+   196 0000010E B813000000                      mov eax , 19
+   197 00000113 E91E000000                      jmp _manage
+   198                                  				
+   199                                  				
+   200                                  _manage_with_error_code:
+   201 00000118 FF7504                  				push dword [ebp + 4] ; tomo error code
+   202 0000011B FF7508                  				push dword [ebp + 8] ; tomo eip
+   203 0000011E FF750C                  				push dword [ebp + 12] ; tomo cs
+   204 00000121 50                              push eax
+   205 00000122 E8(00000000)                    call high_level_handler
+   206 00000127 81C410000000                    add esp , 16
+   207                                  				
+   208 0000012D 61                              popa
+   209 0000012E 5D                      				pop ebp
+   210                                  				; saco el codigo de error
+   211 0000012F 81C404000000            				add esp, 4
+   212 00000135 CF                              iret
+   213                                  _manage:
+   214 00000136 6800000000              				push dword 0
+   215 0000013B FF7504                  				push dword [ebp + 4] ; tomo eip
+   216 0000013E FF7508                  				push dword [ebp + 8] ; tomo cs
+   217 00000141 50                              push eax
+   218 00000142 B810000000              				mov eax, 0x10
+   219 00000147 8ED8                    				mov ds, ax
+   220 00000149 E8(00000000)                    call high_level_handler_faults
+   221 0000014E 81C410000000                    add esp , 16
+   222 00000154 B823000000              				mov eax, 0x23
+   223 00000159 8ED8                    				mov ds, ax
+   224 0000015B 61                              popa
+   225 0000015C 5D                      				pop ebp
+   226 0000015D CF                              iret
+   227                                  				
+   228                                  %assign interruptId 20
+   229                                  %rep 256-20
+   230                                  	call _save
+   231                                  	mov eax, interruptId
+   232                                  	jmp _allInterruptHandlers
+   233                                  	%assign interruptId interruptId+1
+   234                                  %endrep
+   235 0000015E E8210E0000          <1>  call _save
+   236 00000163 B814000000          <1>  mov eax, interruptId
+   237 00000168 E9C50D0000          <1>  jmp _allInterruptHandlers
+   238                              <1>  %assign interruptId interruptId+1
+   239 0000016D E8120E0000          <1>  call _save
+   240 00000172 B815000000          <1>  mov eax, interruptId
+   241 00000177 E9B60D0000          <1>  jmp _allInterruptHandlers
+   242                              <1>  %assign interruptId interruptId+1
+   243 0000017C E8030E0000          <1>  call _save
+   244 00000181 B816000000          <1>  mov eax, interruptId
+   245 00000186 E9A70D0000          <1>  jmp _allInterruptHandlers
+   246                              <1>  %assign interruptId interruptId+1
+   247 0000018B E8F40D0000          <1>  call _save
+   248 00000190 B817000000          <1>  mov eax, interruptId
+   249 00000195 E9980D0000          <1>  jmp _allInterruptHandlers
+   250                              <1>  %assign interruptId interruptId+1
+   251 0000019A E8E50D0000          <1>  call _save
+   252 0000019F B818000000          <1>  mov eax, interruptId
+   253 000001A4 E9890D0000          <1>  jmp _allInterruptHandlers
+   254                              <1>  %assign interruptId interruptId+1
+   255 000001A9 E8D60D0000          <1>  call _save
+   256 000001AE B819000000          <1>  mov eax, interruptId
+   257 000001B3 E97A0D0000          <1>  jmp _allInterruptHandlers
+   258                              <1>  %assign interruptId interruptId+1
+   259 000001B8 E8C70D0000          <1>  call _save
+   260 000001BD B81A000000          <1>  mov eax, interruptId
+   261 000001C2 E96B0D0000          <1>  jmp _allInterruptHandlers
+   262                              <1>  %assign interruptId interruptId+1
+   263 000001C7 E8B80D0000          <1>  call _save
+   264 000001CC B81B000000          <1>  mov eax, interruptId
+   265 000001D1 E95C0D0000          <1>  jmp _allInterruptHandlers
+   266                              <1>  %assign interruptId interruptId+1
+   267 000001D6 E8A90D0000          <1>  call _save
+   268 000001DB B81C000000          <1>  mov eax, interruptId
+   269 000001E0 E94D0D0000          <1>  jmp _allInterruptHandlers
+   270                              <1>  %assign interruptId interruptId+1
+   271 000001E5 E89A0D0000          <1>  call _save
+   272 000001EA B81D000000          <1>  mov eax, interruptId
+   273 000001EF E93E0D0000          <1>  jmp _allInterruptHandlers
+   274                              <1>  %assign interruptId interruptId+1
+   275 000001F4 E88B0D0000          <1>  call _save
+   276 000001F9 B81E000000          <1>  mov eax, interruptId
+   277 000001FE E92F0D0000          <1>  jmp _allInterruptHandlers
+   278                              <1>  %assign interruptId interruptId+1
+   279 00000203 E87C0D0000          <1>  call _save
+   280 00000208 B81F000000          <1>  mov eax, interruptId
+   281 0000020D E9200D0000          <1>  jmp _allInterruptHandlers
+   282                              <1>  %assign interruptId interruptId+1
+   283 00000212 E86D0D0000          <1>  call _save
+   284 00000217 B820000000          <1>  mov eax, interruptId
+   285 0000021C E9110D0000          <1>  jmp _allInterruptHandlers
+   286                              <1>  %assign interruptId interruptId+1
+   287 00000221 E85E0D0000          <1>  call _save
+   288 00000226 B821000000          <1>  mov eax, interruptId
+   289 0000022B E9020D0000          <1>  jmp _allInterruptHandlers
+   290                              <1>  %assign interruptId interruptId+1
+   291 00000230 E84F0D0000          <1>  call _save
+   292 00000235 B822000000          <1>  mov eax, interruptId
+   293 0000023A E9F30C0000          <1>  jmp _allInterruptHandlers
+   294                              <1>  %assign interruptId interruptId+1
+   295 0000023F E8400D0000          <1>  call _save
+   296 00000244 B823000000          <1>  mov eax, interruptId
+   297 00000249 E9E40C0000          <1>  jmp _allInterruptHandlers
+   298                              <1>  %assign interruptId interruptId+1
+   299 0000024E E8310D0000          <1>  call _save
+   300 00000253 B824000000          <1>  mov eax, interruptId
+   301 00000258 E9D50C0000          <1>  jmp _allInterruptHandlers
+   302                              <1>  %assign interruptId interruptId+1
+   303 0000025D E8220D0000          <1>  call _save
+   304 00000262 B825000000          <1>  mov eax, interruptId
+   305 00000267 E9C60C0000          <1>  jmp _allInterruptHandlers
+   306                              <1>  %assign interruptId interruptId+1
+   307 0000026C E8130D0000          <1>  call _save
+   308 00000271 B826000000          <1>  mov eax, interruptId
+   309 00000276 E9B70C0000          <1>  jmp _allInterruptHandlers
+   310                              <1>  %assign interruptId interruptId+1
+   311 0000027B E8040D0000          <1>  call _save
+   312 00000280 B827000000          <1>  mov eax, interruptId
+   313 00000285 E9A80C0000          <1>  jmp _allInterruptHandlers
+   314                              <1>  %assign interruptId interruptId+1
+   315 0000028A E8F50C0000          <1>  call _save
+   316 0000028F B828000000          <1>  mov eax, interruptId
+   317 00000294 E9990C0000          <1>  jmp _allInterruptHandlers
+   318                              <1>  %assign interruptId interruptId+1
+   319 00000299 E8E60C0000          <1>  call _save
+   320 0000029E B829000000          <1>  mov eax, interruptId
+   321 000002A3 E98A0C0000          <1>  jmp _allInterruptHandlers
+   322                              <1>  %assign interruptId interruptId+1
+   323 000002A8 E8D70C0000          <1>  call _save
+   324 000002AD B82A000000          <1>  mov eax, interruptId
+   325 000002B2 E97B0C0000          <1>  jmp _allInterruptHandlers
+   326                              <1>  %assign interruptId interruptId+1
+   327 000002B7 E8C80C0000          <1>  call _save
+   328 000002BC B82B000000          <1>  mov eax, interruptId
+   329 000002C1 E96C0C0000          <1>  jmp _allInterruptHandlers
+   330                              <1>  %assign interruptId interruptId+1
+   331 000002C6 E8B90C0000          <1>  call _save
+   332 000002CB B82C000000          <1>  mov eax, interruptId
+   333 000002D0 E95D0C0000          <1>  jmp _allInterruptHandlers
+   334                              <1>  %assign interruptId interruptId+1
+   335 000002D5 E8AA0C0000          <1>  call _save
+   336 000002DA B82D000000          <1>  mov eax, interruptId
+   337 000002DF E94E0C0000          <1>  jmp _allInterruptHandlers
+   338                              <1>  %assign interruptId interruptId+1
+   339 000002E4 E89B0C0000          <1>  call _save
+   340 000002E9 B82E000000          <1>  mov eax, interruptId
+   341 000002EE E93F0C0000          <1>  jmp _allInterruptHandlers
+   342                              <1>  %assign interruptId interruptId+1
+   343 000002F3 E88C0C0000          <1>  call _save
+   344 000002F8 B82F000000          <1>  mov eax, interruptId
+   345 000002FD E9300C0000          <1>  jmp _allInterruptHandlers
+   346                              <1>  %assign interruptId interruptId+1
+   347 00000302 E87D0C0000          <1>  call _save
+   348 00000307 B830000000          <1>  mov eax, interruptId
+   349 0000030C E9210C0000          <1>  jmp _allInterruptHandlers
+   350                              <1>  %assign interruptId interruptId+1
+   351 00000311 E86E0C0000          <1>  call _save
+   352 00000316 B831000000          <1>  mov eax, interruptId
+   353 0000031B E9120C0000          <1>  jmp _allInterruptHandlers
+   354                              <1>  %assign interruptId interruptId+1
+   355 00000320 E85F0C0000          <1>  call _save
+   356 00000325 B832000000          <1>  mov eax, interruptId
+   357 0000032A E9030C0000          <1>  jmp _allInterruptHandlers
+   358                              <1>  %assign interruptId interruptId+1
+   359 0000032F E8500C0000          <1>  call _save
+   360 00000334 B833000000          <1>  mov eax, interruptId
+   361 00000339 E9F40B0000          <1>  jmp _allInterruptHandlers
+   362                              <1>  %assign interruptId interruptId+1
+   363 0000033E E8410C0000          <1>  call _save
+   364 00000343 B834000000          <1>  mov eax, interruptId
+   365 00000348 E9E50B0000          <1>  jmp _allInterruptHandlers
+   366                              <1>  %assign interruptId interruptId+1
+   367 0000034D E8320C0000          <1>  call _save
+   368 00000352 B835000000          <1>  mov eax, interruptId
+   369 00000357 E9D60B0000          <1>  jmp _allInterruptHandlers
+   370                              <1>  %assign interruptId interruptId+1
+   371 0000035C E8230C0000          <1>  call _save
+   372 00000361 B836000000          <1>  mov eax, interruptId
+   373 00000366 E9C70B0000          <1>  jmp _allInterruptHandlers
+   374                              <1>  %assign interruptId interruptId+1
+   375 0000036B E8140C0000          <1>  call _save
+   376 00000370 B837000000          <1>  mov eax, interruptId
+   377 00000375 E9B80B0000          <1>  jmp _allInterruptHandlers
+   378                              <1>  %assign interruptId interruptId+1
+   379 0000037A E8050C0000          <1>  call _save
+   380 0000037F B838000000          <1>  mov eax, interruptId
+   381 00000384 E9A90B0000          <1>  jmp _allInterruptHandlers
+   382                              <1>  %assign interruptId interruptId+1
+   383 00000389 E8F60B0000          <1>  call _save
+   384 0000038E B839000000          <1>  mov eax, interruptId
+   385 00000393 E99A0B0000          <1>  jmp _allInterruptHandlers
+   386                              <1>  %assign interruptId interruptId+1
+   387 00000398 E8E70B0000          <1>  call _save
+   388 0000039D B83A000000          <1>  mov eax, interruptId
+   389 000003A2 E98B0B0000          <1>  jmp _allInterruptHandlers
+   390                              <1>  %assign interruptId interruptId+1
+   391 000003A7 E8D80B0000          <1>  call _save
+   392 000003AC B83B000000          <1>  mov eax, interruptId
+   393 000003B1 E97C0B0000          <1>  jmp _allInterruptHandlers
+   394                              <1>  %assign interruptId interruptId+1
+   395 000003B6 E8C90B0000          <1>  call _save
+   396 000003BB B83C000000          <1>  mov eax, interruptId
+   397 000003C0 E96D0B0000          <1>  jmp _allInterruptHandlers
+   398                              <1>  %assign interruptId interruptId+1
+   399 000003C5 E8BA0B0000          <1>  call _save
+   400 000003CA B83D000000          <1>  mov eax, interruptId
+   401 000003CF E95E0B0000          <1>  jmp _allInterruptHandlers
+   402                              <1>  %assign interruptId interruptId+1
+   403 000003D4 E8AB0B0000          <1>  call _save
+   404 000003D9 B83E000000          <1>  mov eax, interruptId
+   405 000003DE E94F0B0000          <1>  jmp _allInterruptHandlers
+   406                              <1>  %assign interruptId interruptId+1
+   407 000003E3 E89C0B0000          <1>  call _save
+   408 000003E8 B83F000000          <1>  mov eax, interruptId
+   409 000003ED E9400B0000          <1>  jmp _allInterruptHandlers
+   410                              <1>  %assign interruptId interruptId+1
+   411 000003F2 E88D0B0000          <1>  call _save
+   412 000003F7 B840000000          <1>  mov eax, interruptId
+   413 000003FC E9310B0000          <1>  jmp _allInterruptHandlers
+   414                              <1>  %assign interruptId interruptId+1
+   415 00000401 E87E0B0000          <1>  call _save
+   416 00000406 B841000000          <1>  mov eax, interruptId
+   417 0000040B E9220B0000          <1>  jmp _allInterruptHandlers
+   418                              <1>  %assign interruptId interruptId+1
+   419 00000410 E86F0B0000          <1>  call _save
+   420 00000415 B842000000          <1>  mov eax, interruptId
+   421 0000041A E9130B0000          <1>  jmp _allInterruptHandlers
+   422                              <1>  %assign interruptId interruptId+1
+   423 0000041F E8600B0000          <1>  call _save
+   424 00000424 B843000000          <1>  mov eax, interruptId
+   425 00000429 E9040B0000          <1>  jmp _allInterruptHandlers
+   426                              <1>  %assign interruptId interruptId+1
+   427 0000042E E8510B0000          <1>  call _save
+   428 00000433 B844000000          <1>  mov eax, interruptId
+   429 00000438 E9F50A0000          <1>  jmp _allInterruptHandlers
+   430                              <1>  %assign interruptId interruptId+1
+   431 0000043D E8420B0000          <1>  call _save
+   432 00000442 B845000000          <1>  mov eax, interruptId
+   433 00000447 E9E60A0000          <1>  jmp _allInterruptHandlers
+   434                              <1>  %assign interruptId interruptId+1
+   435 0000044C E8330B0000          <1>  call _save
+   436 00000451 B846000000          <1>  mov eax, interruptId
+   437 00000456 E9D70A0000          <1>  jmp _allInterruptHandlers
+   438                              <1>  %assign interruptId interruptId+1
+   439 0000045B E8240B0000          <1>  call _save
+   440 00000460 B847000000          <1>  mov eax, interruptId
+   441 00000465 E9C80A0000          <1>  jmp _allInterruptHandlers
+   442                              <1>  %assign interruptId interruptId+1
+   443 0000046A E8150B0000          <1>  call _save
+   444 0000046F B848000000          <1>  mov eax, interruptId
+   445 00000474 E9B90A0000          <1>  jmp _allInterruptHandlers
+   446                              <1>  %assign interruptId interruptId+1
+   447 00000479 E8060B0000          <1>  call _save
+   448 0000047E B849000000          <1>  mov eax, interruptId
+   449 00000483 E9AA0A0000          <1>  jmp _allInterruptHandlers
+   450                              <1>  %assign interruptId interruptId+1
+   451 00000488 E8F70A0000          <1>  call _save
+   452 0000048D B84A000000          <1>  mov eax, interruptId
+   453 00000492 E99B0A0000          <1>  jmp _allInterruptHandlers
+   454                              <1>  %assign interruptId interruptId+1
+   455 00000497 E8E80A0000          <1>  call _save
+   456 0000049C B84B000000          <1>  mov eax, interruptId
+   457 000004A1 E98C0A0000          <1>  jmp _allInterruptHandlers
+   458                              <1>  %assign interruptId interruptId+1
+   459 000004A6 E8D90A0000          <1>  call _save
+   460 000004AB B84C000000          <1>  mov eax, interruptId
+   461 000004B0 E97D0A0000          <1>  jmp _allInterruptHandlers
+   462                              <1>  %assign interruptId interruptId+1
+   463 000004B5 E8CA0A0000          <1>  call _save
+   464 000004BA B84D000000          <1>  mov eax, interruptId
+   465 000004BF E96E0A0000          <1>  jmp _allInterruptHandlers
+   466                              <1>  %assign interruptId interruptId+1
+   467 000004C4 E8BB0A0000          <1>  call _save
+   468 000004C9 B84E000000          <1>  mov eax, interruptId
+   469 000004CE E95F0A0000          <1>  jmp _allInterruptHandlers
+   470                              <1>  %assign interruptId interruptId+1
+   471 000004D3 E8AC0A0000          <1>  call _save
+   472 000004D8 B84F000000          <1>  mov eax, interruptId
+   473 000004DD E9500A0000          <1>  jmp _allInterruptHandlers
+   474                              <1>  %assign interruptId interruptId+1
+   475 000004E2 E89D0A0000          <1>  call _save
+   476 000004E7 B850000000          <1>  mov eax, interruptId
+   477 000004EC E9410A0000          <1>  jmp _allInterruptHandlers
+   478                              <1>  %assign interruptId interruptId+1
+   479 000004F1 E88E0A0000          <1>  call _save
+   480 000004F6 B851000000          <1>  mov eax, interruptId
+   481 000004FB E9320A0000          <1>  jmp _allInterruptHandlers
+   482                              <1>  %assign interruptId interruptId+1
+   483 00000500 E87F0A0000          <1>  call _save
+   484 00000505 B852000000          <1>  mov eax, interruptId
+   485 0000050A E9230A0000          <1>  jmp _allInterruptHandlers
+   486                              <1>  %assign interruptId interruptId+1
+   487 0000050F E8700A0000          <1>  call _save
+   488 00000514 B853000000          <1>  mov eax, interruptId
+   489 00000519 E9140A0000          <1>  jmp _allInterruptHandlers
+   490                              <1>  %assign interruptId interruptId+1
+   491 0000051E E8610A0000          <1>  call _save
+   492 00000523 B854000000          <1>  mov eax, interruptId
+   493 00000528 E9050A0000          <1>  jmp _allInterruptHandlers
+   494                              <1>  %assign interruptId interruptId+1
+   495 0000052D E8520A0000          <1>  call _save
+   496 00000532 B855000000          <1>  mov eax, interruptId
+   497 00000537 E9F6090000          <1>  jmp _allInterruptHandlers
+   498                              <1>  %assign interruptId interruptId+1
+   499 0000053C E8430A0000          <1>  call _save
+   500 00000541 B856000000          <1>  mov eax, interruptId
+   501 00000546 E9E7090000          <1>  jmp _allInterruptHandlers
+   502                              <1>  %assign interruptId interruptId+1
+   503 0000054B E8340A0000          <1>  call _save
+   504 00000550 B857000000          <1>  mov eax, interruptId
+   505 00000555 E9D8090000          <1>  jmp _allInterruptHandlers
+   506                              <1>  %assign interruptId interruptId+1
+   507 0000055A E8250A0000          <1>  call _save
+   508 0000055F B858000000          <1>  mov eax, interruptId
+   509 00000564 E9C9090000          <1>  jmp _allInterruptHandlers
+   510                              <1>  %assign interruptId interruptId+1
+   511 00000569 E8160A0000          <1>  call _save
+   512 0000056E B859000000          <1>  mov eax, interruptId
+   513 00000573 E9BA090000          <1>  jmp _allInterruptHandlers
+   514                              <1>  %assign interruptId interruptId+1
+   515 00000578 E8070A0000          <1>  call _save
+   516 0000057D B85A000000          <1>  mov eax, interruptId
+   517 00000582 E9AB090000          <1>  jmp _allInterruptHandlers
+   518                              <1>  %assign interruptId interruptId+1
+   519 00000587 E8F8090000          <1>  call _save
+   520 0000058C B85B000000          <1>  mov eax, interruptId
+   521 00000591 E99C090000          <1>  jmp _allInterruptHandlers
+   522                              <1>  %assign interruptId interruptId+1
+   523 00000596 E8E9090000          <1>  call _save
+   524 0000059B B85C000000          <1>  mov eax, interruptId
+   525 000005A0 E98D090000          <1>  jmp _allInterruptHandlers
+   526                              <1>  %assign interruptId interruptId+1
+   527 000005A5 E8DA090000          <1>  call _save
+   528 000005AA B85D000000          <1>  mov eax, interruptId
+   529 000005AF E97E090000          <1>  jmp _allInterruptHandlers
+   530                              <1>  %assign interruptId interruptId+1
+   531 000005B4 E8CB090000          <1>  call _save
+   532 000005B9 B85E000000          <1>  mov eax, interruptId
+   533 000005BE E96F090000          <1>  jmp _allInterruptHandlers
+   534                              <1>  %assign interruptId interruptId+1
+   535 000005C3 E8BC090000          <1>  call _save
+   536 000005C8 B85F000000          <1>  mov eax, interruptId
+   537 000005CD E960090000          <1>  jmp _allInterruptHandlers
+   538                              <1>  %assign interruptId interruptId+1
+   539 000005D2 E8AD090000          <1>  call _save
+   540 000005D7 B860000000          <1>  mov eax, interruptId
+   541 000005DC E951090000          <1>  jmp _allInterruptHandlers
+   542                              <1>  %assign interruptId interruptId+1
+   543 000005E1 E89E090000          <1>  call _save
+   544 000005E6 B861000000          <1>  mov eax, interruptId
+   545 000005EB E942090000          <1>  jmp _allInterruptHandlers
+   546                              <1>  %assign interruptId interruptId+1
+   547 000005F0 E88F090000          <1>  call _save
+   548 000005F5 B862000000          <1>  mov eax, interruptId
+   549 000005FA E933090000          <1>  jmp _allInterruptHandlers
+   550                              <1>  %assign interruptId interruptId+1
+   551 000005FF E880090000          <1>  call _save
+   552 00000604 B863000000          <1>  mov eax, interruptId
+   553 00000609 E924090000          <1>  jmp _allInterruptHandlers
+   554                              <1>  %assign interruptId interruptId+1
+   555 0000060E E871090000          <1>  call _save
+   556 00000613 B864000000          <1>  mov eax, interruptId
+   557 00000618 E915090000          <1>  jmp _allInterruptHandlers
+   558                              <1>  %assign interruptId interruptId+1
+   559 0000061D E862090000          <1>  call _save
+   560 00000622 B865000000          <1>  mov eax, interruptId
+   561 00000627 E906090000          <1>  jmp _allInterruptHandlers
+   562                              <1>  %assign interruptId interruptId+1
+   563 0000062C E853090000          <1>  call _save
+   564 00000631 B866000000          <1>  mov eax, interruptId
+   565 00000636 E9F7080000          <1>  jmp _allInterruptHandlers
+   566                              <1>  %assign interruptId interruptId+1
+   567 0000063B E844090000          <1>  call _save
+   568 00000640 B867000000          <1>  mov eax, interruptId
+   569 00000645 E9E8080000          <1>  jmp _allInterruptHandlers
+   570                              <1>  %assign interruptId interruptId+1
+   571 0000064A E835090000          <1>  call _save
+   572 0000064F B868000000          <1>  mov eax, interruptId
+   573 00000654 E9D9080000          <1>  jmp _allInterruptHandlers
+   574                              <1>  %assign interruptId interruptId+1
+   575 00000659 E826090000          <1>  call _save
+   576 0000065E B869000000          <1>  mov eax, interruptId
+   577 00000663 E9CA080000          <1>  jmp _allInterruptHandlers
+   578                              <1>  %assign interruptId interruptId+1
+   579 00000668 E817090000          <1>  call _save
+   580 0000066D B86A000000          <1>  mov eax, interruptId
+   581 00000672 E9BB080000          <1>  jmp _allInterruptHandlers
+   582                              <1>  %assign interruptId interruptId+1
+   583 00000677 E808090000          <1>  call _save
+   584 0000067C B86B000000          <1>  mov eax, interruptId
+   585 00000681 E9AC080000          <1>  jmp _allInterruptHandlers
+   586                              <1>  %assign interruptId interruptId+1
+   587 00000686 E8F9080000          <1>  call _save
+   588 0000068B B86C000000          <1>  mov eax, interruptId
+   589 00000690 E99D080000          <1>  jmp _allInterruptHandlers
+   590                              <1>  %assign interruptId interruptId+1
+   591 00000695 E8EA080000          <1>  call _save
+   592 0000069A B86D000000          <1>  mov eax, interruptId
+   593 0000069F E98E080000          <1>  jmp _allInterruptHandlers
+   594                              <1>  %assign interruptId interruptId+1
+   595 000006A4 E8DB080000          <1>  call _save
+   596 000006A9 B86E000000          <1>  mov eax, interruptId
+   597 000006AE E97F080000          <1>  jmp _allInterruptHandlers
+   598                              <1>  %assign interruptId interruptId+1
+   599 000006B3 E8CC080000          <1>  call _save
+   600 000006B8 B86F000000          <1>  mov eax, interruptId
+   601 000006BD E970080000          <1>  jmp _allInterruptHandlers
+   602                              <1>  %assign interruptId interruptId+1
+   603 000006C2 E8BD080000          <1>  call _save
+   604 000006C7 B870000000          <1>  mov eax, interruptId
+   605 000006CC E961080000          <1>  jmp _allInterruptHandlers
+   606                              <1>  %assign interruptId interruptId+1
+   607 000006D1 E8AE080000          <1>  call _save
+   608 000006D6 B871000000          <1>  mov eax, interruptId
+   609 000006DB E952080000          <1>  jmp _allInterruptHandlers
+   610                              <1>  %assign interruptId interruptId+1
+   611 000006E0 E89F080000          <1>  call _save
+   612 000006E5 B872000000          <1>  mov eax, interruptId
+   613 000006EA E943080000          <1>  jmp _allInterruptHandlers
+   614                              <1>  %assign interruptId interruptId+1
+   615 000006EF E890080000          <1>  call _save
+   616 000006F4 B873000000          <1>  mov eax, interruptId
+   617 000006F9 E934080000          <1>  jmp _allInterruptHandlers
+   618                              <1>  %assign interruptId interruptId+1
+   619 000006FE E881080000          <1>  call _save
+   620 00000703 B874000000          <1>  mov eax, interruptId
+   621 00000708 E925080000          <1>  jmp _allInterruptHandlers
+   622                              <1>  %assign interruptId interruptId+1
+   623 0000070D E872080000          <1>  call _save
+   624 00000712 B875000000          <1>  mov eax, interruptId
+   625 00000717 E916080000          <1>  jmp _allInterruptHandlers
+   626                              <1>  %assign interruptId interruptId+1
+   627 0000071C E863080000          <1>  call _save
+   628 00000721 B876000000          <1>  mov eax, interruptId
+   629 00000726 E907080000          <1>  jmp _allInterruptHandlers
+   630                              <1>  %assign interruptId interruptId+1
+   631 0000072B E854080000          <1>  call _save
+   632 00000730 B877000000          <1>  mov eax, interruptId
+   633 00000735 E9F8070000          <1>  jmp _allInterruptHandlers
+   634                              <1>  %assign interruptId interruptId+1
+   635 0000073A E845080000          <1>  call _save
+   636 0000073F B878000000          <1>  mov eax, interruptId
+   637 00000744 E9E9070000          <1>  jmp _allInterruptHandlers
+   638                              <1>  %assign interruptId interruptId+1
+   639 00000749 E836080000          <1>  call _save
+   640 0000074E B879000000          <1>  mov eax, interruptId
+   641 00000753 E9DA070000          <1>  jmp _allInterruptHandlers
+   642                              <1>  %assign interruptId interruptId+1
+   643 00000758 E827080000          <1>  call _save
+   644 0000075D B87A000000          <1>  mov eax, interruptId
+   645 00000762 E9CB070000          <1>  jmp _allInterruptHandlers
+   646                              <1>  %assign interruptId interruptId+1
+   647 00000767 E818080000          <1>  call _save
+   648 0000076C B87B000000          <1>  mov eax, interruptId
+   649 00000771 E9BC070000          <1>  jmp _allInterruptHandlers
+   650                              <1>  %assign interruptId interruptId+1
+   651 00000776 E809080000          <1>  call _save
+   652 0000077B B87C000000          <1>  mov eax, interruptId
+   653 00000780 E9AD070000          <1>  jmp _allInterruptHandlers
+   654                              <1>  %assign interruptId interruptId+1
+   655 00000785 E8FA070000          <1>  call _save
+   656 0000078A B87D000000          <1>  mov eax, interruptId
+   657 0000078F E99E070000          <1>  jmp _allInterruptHandlers
+   658                              <1>  %assign interruptId interruptId+1
+   659 00000794 E8EB070000          <1>  call _save
+   660 00000799 B87E000000          <1>  mov eax, interruptId
+   661 0000079E E98F070000          <1>  jmp _allInterruptHandlers
+   662                              <1>  %assign interruptId interruptId+1
+   663 000007A3 E8DC070000          <1>  call _save
+   664 000007A8 B87F000000          <1>  mov eax, interruptId
+   665 000007AD E980070000          <1>  jmp _allInterruptHandlers
+   666                              <1>  %assign interruptId interruptId+1
+   667 000007B2 E8CD070000          <1>  call _save
+   668 000007B7 B880000000          <1>  mov eax, interruptId
+   669 000007BC E971070000          <1>  jmp _allInterruptHandlers
+   670                              <1>  %assign interruptId interruptId+1
+   671 000007C1 E8BE070000          <1>  call _save
+   672 000007C6 B881000000          <1>  mov eax, interruptId
+   673 000007CB E962070000          <1>  jmp _allInterruptHandlers
+   674                              <1>  %assign interruptId interruptId+1
+   675 000007D0 E8AF070000          <1>  call _save
+   676 000007D5 B882000000          <1>  mov eax, interruptId
+   677 000007DA E953070000          <1>  jmp _allInterruptHandlers
+   678                              <1>  %assign interruptId interruptId+1
+   679 000007DF E8A0070000          <1>  call _save
+   680 000007E4 B883000000          <1>  mov eax, interruptId
+   681 000007E9 E944070000          <1>  jmp _allInterruptHandlers
+   682                              <1>  %assign interruptId interruptId+1
+   683 000007EE E891070000          <1>  call _save
+   684 000007F3 B884000000          <1>  mov eax, interruptId
+   685 000007F8 E935070000          <1>  jmp _allInterruptHandlers
+   686                              <1>  %assign interruptId interruptId+1
+   687 000007FD E882070000          <1>  call _save
+   688 00000802 B885000000          <1>  mov eax, interruptId
+   689 00000807 E926070000          <1>  jmp _allInterruptHandlers
+   690                              <1>  %assign interruptId interruptId+1
+   691 0000080C E873070000          <1>  call _save
+   692 00000811 B886000000          <1>  mov eax, interruptId
+   693 00000816 E917070000          <1>  jmp _allInterruptHandlers
+   694                              <1>  %assign interruptId interruptId+1
+   695 0000081B E864070000          <1>  call _save
+   696 00000820 B887000000          <1>  mov eax, interruptId
+   697 00000825 E908070000          <1>  jmp _allInterruptHandlers
+   698                              <1>  %assign interruptId interruptId+1
+   699 0000082A E855070000          <1>  call _save
+   700 0000082F B888000000          <1>  mov eax, interruptId
+   701 00000834 E9F9060000          <1>  jmp _allInterruptHandlers
+   702                              <1>  %assign interruptId interruptId+1
+   703 00000839 E846070000          <1>  call _save
+   704 0000083E B889000000          <1>  mov eax, interruptId
+   705 00000843 E9EA060000          <1>  jmp _allInterruptHandlers
+   706                              <1>  %assign interruptId interruptId+1
+   707 00000848 E837070000          <1>  call _save
+   708 0000084D B88A000000          <1>  mov eax, interruptId
+   709 00000852 E9DB060000          <1>  jmp _allInterruptHandlers
+   710                              <1>  %assign interruptId interruptId+1
+   711 00000857 E828070000          <1>  call _save
+   712 0000085C B88B000000          <1>  mov eax, interruptId
+   713 00000861 E9CC060000          <1>  jmp _allInterruptHandlers
+   714                              <1>  %assign interruptId interruptId+1
+   715 00000866 E819070000          <1>  call _save
+   716 0000086B B88C000000          <1>  mov eax, interruptId
+   717 00000870 E9BD060000          <1>  jmp _allInterruptHandlers
+   718                              <1>  %assign interruptId interruptId+1
+   719 00000875 E80A070000          <1>  call _save
+   720 0000087A B88D000000          <1>  mov eax, interruptId
+   721 0000087F E9AE060000          <1>  jmp _allInterruptHandlers
+   722                              <1>  %assign interruptId interruptId+1
+   723 00000884 E8FB060000          <1>  call _save
+   724 00000889 B88E000000          <1>  mov eax, interruptId
+   725 0000088E E99F060000          <1>  jmp _allInterruptHandlers
+   726                              <1>  %assign interruptId interruptId+1
+   727 00000893 E8EC060000          <1>  call _save
+   728 00000898 B88F000000          <1>  mov eax, interruptId
+   729 0000089D E990060000          <1>  jmp _allInterruptHandlers
+   730                              <1>  %assign interruptId interruptId+1
+   731 000008A2 E8DD060000          <1>  call _save
+   732 000008A7 B890000000          <1>  mov eax, interruptId
+   733 000008AC E981060000          <1>  jmp _allInterruptHandlers
+   734                              <1>  %assign interruptId interruptId+1
+   735 000008B1 E8CE060000          <1>  call _save
+   736 000008B6 B891000000          <1>  mov eax, interruptId
+   737 000008BB E972060000          <1>  jmp _allInterruptHandlers
+   738                              <1>  %assign interruptId interruptId+1
+   739 000008C0 E8BF060000          <1>  call _save
+   740 000008C5 B892000000          <1>  mov eax, interruptId
+   741 000008CA E963060000          <1>  jmp _allInterruptHandlers
+   742                              <1>  %assign interruptId interruptId+1
+   743 000008CF E8B0060000          <1>  call _save
+   744 000008D4 B893000000          <1>  mov eax, interruptId
+   745 000008D9 E954060000          <1>  jmp _allInterruptHandlers
+   746                              <1>  %assign interruptId interruptId+1
+   747 000008DE E8A1060000          <1>  call _save
+   748 000008E3 B894000000          <1>  mov eax, interruptId
+   749 000008E8 E945060000          <1>  jmp _allInterruptHandlers
+   750                              <1>  %assign interruptId interruptId+1
+   751 000008ED E892060000          <1>  call _save
+   752 000008F2 B895000000          <1>  mov eax, interruptId
+   753 000008F7 E936060000          <1>  jmp _allInterruptHandlers
+   754                              <1>  %assign interruptId interruptId+1
+   755 000008FC E883060000          <1>  call _save
+   756 00000901 B896000000          <1>  mov eax, interruptId
+   757 00000906 E927060000          <1>  jmp _allInterruptHandlers
+   758                              <1>  %assign interruptId interruptId+1
+   759 0000090B E874060000          <1>  call _save
+   760 00000910 B897000000          <1>  mov eax, interruptId
+   761 00000915 E918060000          <1>  jmp _allInterruptHandlers
+   762                              <1>  %assign interruptId interruptId+1
+   763 0000091A E865060000          <1>  call _save
+   764 0000091F B898000000          <1>  mov eax, interruptId
+   765 00000924 E909060000          <1>  jmp _allInterruptHandlers
+   766                              <1>  %assign interruptId interruptId+1
+   767 00000929 E856060000          <1>  call _save
+   768 0000092E B899000000          <1>  mov eax, interruptId
+   769 00000933 E9FA050000          <1>  jmp _allInterruptHandlers
+   770                              <1>  %assign interruptId interruptId+1
+   771 00000938 E847060000          <1>  call _save
+   772 0000093D B89A000000          <1>  mov eax, interruptId
+   773 00000942 E9EB050000          <1>  jmp _allInterruptHandlers
+   774                              <1>  %assign interruptId interruptId+1
+   775 00000947 E838060000          <1>  call _save
+   776 0000094C B89B000000          <1>  mov eax, interruptId
+   777 00000951 E9DC050000          <1>  jmp _allInterruptHandlers
+   778                              <1>  %assign interruptId interruptId+1
+   779 00000956 E829060000          <1>  call _save
+   780 0000095B B89C000000          <1>  mov eax, interruptId
+   781 00000960 E9CD050000          <1>  jmp _allInterruptHandlers
+   782                              <1>  %assign interruptId interruptId+1
+   783 00000965 E81A060000          <1>  call _save
+   784 0000096A B89D000000          <1>  mov eax, interruptId
+   785 0000096F E9BE050000          <1>  jmp _allInterruptHandlers
+   786                              <1>  %assign interruptId interruptId+1
+   787 00000974 E80B060000          <1>  call _save
+   788 00000979 B89E000000          <1>  mov eax, interruptId
+   789 0000097E E9AF050000          <1>  jmp _allInterruptHandlers
+   790                              <1>  %assign interruptId interruptId+1
+   791 00000983 E8FC050000          <1>  call _save
+   792 00000988 B89F000000          <1>  mov eax, interruptId
+   793 0000098D E9A0050000          <1>  jmp _allInterruptHandlers
+   794                              <1>  %assign interruptId interruptId+1
+   795 00000992 E8ED050000          <1>  call _save
+   796 00000997 B8A0000000          <1>  mov eax, interruptId
+   797 0000099C E991050000          <1>  jmp _allInterruptHandlers
+   798                              <1>  %assign interruptId interruptId+1
+   799 000009A1 E8DE050000          <1>  call _save
+   800 000009A6 B8A1000000          <1>  mov eax, interruptId
+   801 000009AB E982050000          <1>  jmp _allInterruptHandlers
+   802                              <1>  %assign interruptId interruptId+1
+   803 000009B0 E8CF050000          <1>  call _save
+   804 000009B5 B8A2000000          <1>  mov eax, interruptId
+   805 000009BA E973050000          <1>  jmp _allInterruptHandlers
+   806                              <1>  %assign interruptId interruptId+1
+   807 000009BF E8C0050000          <1>  call _save
+   808 000009C4 B8A3000000          <1>  mov eax, interruptId
+   809 000009C9 E964050000          <1>  jmp _allInterruptHandlers
+   810                              <1>  %assign interruptId interruptId+1
+   811 000009CE E8B1050000          <1>  call _save
+   812 000009D3 B8A4000000          <1>  mov eax, interruptId
+   813 000009D8 E955050000          <1>  jmp _allInterruptHandlers
+   814                              <1>  %assign interruptId interruptId+1
+   815 000009DD E8A2050000          <1>  call _save
+   816 000009E2 B8A5000000          <1>  mov eax, interruptId
+   817 000009E7 E946050000          <1>  jmp _allInterruptHandlers
+   818                              <1>  %assign interruptId interruptId+1
+   819 000009EC E893050000          <1>  call _save
+   820 000009F1 B8A6000000          <1>  mov eax, interruptId
+   821 000009F6 E937050000          <1>  jmp _allInterruptHandlers
+   822                              <1>  %assign interruptId interruptId+1
+   823 000009FB E884050000          <1>  call _save
+   824 00000A00 B8A7000000          <1>  mov eax, interruptId
+   825 00000A05 E928050000          <1>  jmp _allInterruptHandlers
+   826                              <1>  %assign interruptId interruptId+1
+   827 00000A0A E875050000          <1>  call _save
+   828 00000A0F B8A8000000          <1>  mov eax, interruptId
+   829 00000A14 E919050000          <1>  jmp _allInterruptHandlers
+   830                              <1>  %assign interruptId interruptId+1
+   831 00000A19 E866050000          <1>  call _save
+   832 00000A1E B8A9000000          <1>  mov eax, interruptId
+   833 00000A23 E90A050000          <1>  jmp _allInterruptHandlers
+   834                              <1>  %assign interruptId interruptId+1
+   835 00000A28 E857050000          <1>  call _save
+   836 00000A2D B8AA000000          <1>  mov eax, interruptId
+   837 00000A32 E9FB040000          <1>  jmp _allInterruptHandlers
+   838                              <1>  %assign interruptId interruptId+1
+   839 00000A37 E848050000          <1>  call _save
+   840 00000A3C B8AB000000          <1>  mov eax, interruptId
+   841 00000A41 E9EC040000          <1>  jmp _allInterruptHandlers
+   842                              <1>  %assign interruptId interruptId+1
+   843 00000A46 E839050000          <1>  call _save
+   844 00000A4B B8AC000000          <1>  mov eax, interruptId
+   845 00000A50 E9DD040000          <1>  jmp _allInterruptHandlers
+   846                              <1>  %assign interruptId interruptId+1
+   847 00000A55 E82A050000          <1>  call _save
+   848 00000A5A B8AD000000          <1>  mov eax, interruptId
+   849 00000A5F E9CE040000          <1>  jmp _allInterruptHandlers
+   850                              <1>  %assign interruptId interruptId+1
+   851 00000A64 E81B050000          <1>  call _save
+   852 00000A69 B8AE000000          <1>  mov eax, interruptId
+   853 00000A6E E9BF040000          <1>  jmp _allInterruptHandlers
+   854                              <1>  %assign interruptId interruptId+1
+   855 00000A73 E80C050000          <1>  call _save
+   856 00000A78 B8AF000000          <1>  mov eax, interruptId
+   857 00000A7D E9B0040000          <1>  jmp _allInterruptHandlers
+   858                              <1>  %assign interruptId interruptId+1
+   859 00000A82 E8FD040000          <1>  call _save
+   860 00000A87 B8B0000000          <1>  mov eax, interruptId
+   861 00000A8C E9A1040000          <1>  jmp _allInterruptHandlers
+   862                              <1>  %assign interruptId interruptId+1
+   863 00000A91 E8EE040000          <1>  call _save
+   864 00000A96 B8B1000000          <1>  mov eax, interruptId
+   865 00000A9B E992040000          <1>  jmp _allInterruptHandlers
+   866                              <1>  %assign interruptId interruptId+1
+   867 00000AA0 E8DF040000          <1>  call _save
+   868 00000AA5 B8B2000000          <1>  mov eax, interruptId
+   869 00000AAA E983040000          <1>  jmp _allInterruptHandlers
+   870                              <1>  %assign interruptId interruptId+1
+   871 00000AAF E8D0040000          <1>  call _save
+   872 00000AB4 B8B3000000          <1>  mov eax, interruptId
+   873 00000AB9 E974040000          <1>  jmp _allInterruptHandlers
+   874                              <1>  %assign interruptId interruptId+1
+   875 00000ABE E8C1040000          <1>  call _save
+   876 00000AC3 B8B4000000          <1>  mov eax, interruptId
+   877 00000AC8 E965040000          <1>  jmp _allInterruptHandlers
+   878                              <1>  %assign interruptId interruptId+1
+   879 00000ACD E8B2040000          <1>  call _save
+   880 00000AD2 B8B5000000          <1>  mov eax, interruptId
+   881 00000AD7 E956040000          <1>  jmp _allInterruptHandlers
+   882                              <1>  %assign interruptId interruptId+1
+   883 00000ADC E8A3040000          <1>  call _save
+   884 00000AE1 B8B6000000          <1>  mov eax, interruptId
+   885 00000AE6 E947040000          <1>  jmp _allInterruptHandlers
+   886                              <1>  %assign interruptId interruptId+1
+   887 00000AEB E894040000          <1>  call _save
+   888 00000AF0 B8B7000000          <1>  mov eax, interruptId
+   889 00000AF5 E938040000          <1>  jmp _allInterruptHandlers
+   890                              <1>  %assign interruptId interruptId+1
+   891 00000AFA E885040000          <1>  call _save
+   892 00000AFF B8B8000000          <1>  mov eax, interruptId
+   893 00000B04 E929040000          <1>  jmp _allInterruptHandlers
+   894                              <1>  %assign interruptId interruptId+1
+   895 00000B09 E876040000          <1>  call _save
+   896 00000B0E B8B9000000          <1>  mov eax, interruptId
+   897 00000B13 E91A040000          <1>  jmp _allInterruptHandlers
+   898                              <1>  %assign interruptId interruptId+1
+   899 00000B18 E867040000          <1>  call _save
+   900 00000B1D B8BA000000          <1>  mov eax, interruptId
+   901 00000B22 E90B040000          <1>  jmp _allInterruptHandlers
+   902                              <1>  %assign interruptId interruptId+1
+   903 00000B27 E858040000          <1>  call _save
+   904 00000B2C B8BB000000          <1>  mov eax, interruptId
+   905 00000B31 E9FC030000          <1>  jmp _allInterruptHandlers
+   906                              <1>  %assign interruptId interruptId+1
+   907 00000B36 E849040000          <1>  call _save
+   908 00000B3B B8BC000000          <1>  mov eax, interruptId
+   909 00000B40 E9ED030000          <1>  jmp _allInterruptHandlers
+   910                              <1>  %assign interruptId interruptId+1
+   911 00000B45 E83A040000          <1>  call _save
+   912 00000B4A B8BD000000          <1>  mov eax, interruptId
+   913 00000B4F E9DE030000          <1>  jmp _allInterruptHandlers
+   914                              <1>  %assign interruptId interruptId+1
+   915 00000B54 E82B040000          <1>  call _save
+   916 00000B59 B8BE000000          <1>  mov eax, interruptId
+   917 00000B5E E9CF030000          <1>  jmp _allInterruptHandlers
+   918                              <1>  %assign interruptId interruptId+1
+   919 00000B63 E81C040000          <1>  call _save
+   920 00000B68 B8BF000000          <1>  mov eax, interruptId
+   921 00000B6D E9C0030000          <1>  jmp _allInterruptHandlers
+   922                              <1>  %assign interruptId interruptId+1
+   923 00000B72 E80D040000          <1>  call _save
+   924 00000B77 B8C0000000          <1>  mov eax, interruptId
+   925 00000B7C E9B1030000          <1>  jmp _allInterruptHandlers
+   926                              <1>  %assign interruptId interruptId+1
+   927 00000B81 E8FE030000          <1>  call _save
+   928 00000B86 B8C1000000          <1>  mov eax, interruptId
+   929 00000B8B E9A2030000          <1>  jmp _allInterruptHandlers
+   930                              <1>  %assign interruptId interruptId+1
+   931 00000B90 E8EF030000          <1>  call _save
+   932 00000B95 B8C2000000          <1>  mov eax, interruptId
+   933 00000B9A E993030000          <1>  jmp _allInterruptHandlers
+   934                              <1>  %assign interruptId interruptId+1
+   935 00000B9F E8E0030000          <1>  call _save
+   936 00000BA4 B8C3000000          <1>  mov eax, interruptId
+   937 00000BA9 E984030000          <1>  jmp _allInterruptHandlers
+   938                              <1>  %assign interruptId interruptId+1
+   939 00000BAE E8D1030000          <1>  call _save
+   940 00000BB3 B8C4000000          <1>  mov eax, interruptId
+   941 00000BB8 E975030000          <1>  jmp _allInterruptHandlers
+   942                              <1>  %assign interruptId interruptId+1
+   943 00000BBD E8C2030000          <1>  call _save
+   944 00000BC2 B8C5000000          <1>  mov eax, interruptId
+   945 00000BC7 E966030000          <1>  jmp _allInterruptHandlers
+   946                              <1>  %assign interruptId interruptId+1
+   947 00000BCC E8B3030000          <1>  call _save
+   948 00000BD1 B8C6000000          <1>  mov eax, interruptId
+   949 00000BD6 E957030000          <1>  jmp _allInterruptHandlers
+   950                              <1>  %assign interruptId interruptId+1
+   951 00000BDB E8A4030000          <1>  call _save
+   952 00000BE0 B8C7000000          <1>  mov eax, interruptId
+   953 00000BE5 E948030000          <1>  jmp _allInterruptHandlers
+   954                              <1>  %assign interruptId interruptId+1
+   955 00000BEA E895030000          <1>  call _save
+   956 00000BEF B8C8000000          <1>  mov eax, interruptId
+   957 00000BF4 E939030000          <1>  jmp _allInterruptHandlers
+   958                              <1>  %assign interruptId interruptId+1
+   959 00000BF9 E886030000          <1>  call _save
+   960 00000BFE B8C9000000          <1>  mov eax, interruptId
+   961 00000C03 E92A030000          <1>  jmp _allInterruptHandlers
+   962                              <1>  %assign interruptId interruptId+1
+   963 00000C08 E877030000          <1>  call _save
+   964 00000C0D B8CA000000          <1>  mov eax, interruptId
+   965 00000C12 E91B030000          <1>  jmp _allInterruptHandlers
+   966                              <1>  %assign interruptId interruptId+1
+   967 00000C17 E868030000          <1>  call _save
+   968 00000C1C B8CB000000          <1>  mov eax, interruptId
+   969 00000C21 E90C030000          <1>  jmp _allInterruptHandlers
+   970                              <1>  %assign interruptId interruptId+1
+   971 00000C26 E859030000          <1>  call _save
+   972 00000C2B B8CC000000          <1>  mov eax, interruptId
+   973 00000C30 E9FD020000          <1>  jmp _allInterruptHandlers
+   974                              <1>  %assign interruptId interruptId+1
+   975 00000C35 E84A030000          <1>  call _save
+   976 00000C3A B8CD000000          <1>  mov eax, interruptId
+   977 00000C3F E9EE020000          <1>  jmp _allInterruptHandlers
+   978                              <1>  %assign interruptId interruptId+1
+   979 00000C44 E83B030000          <1>  call _save
+   980 00000C49 B8CE000000          <1>  mov eax, interruptId
+   981 00000C4E E9DF020000          <1>  jmp _allInterruptHandlers
+   982                              <1>  %assign interruptId interruptId+1
+   983 00000C53 E82C030000          <1>  call _save
+   984 00000C58 B8CF000000          <1>  mov eax, interruptId
+   985 00000C5D E9D0020000          <1>  jmp _allInterruptHandlers
+   986                              <1>  %assign interruptId interruptId+1
+   987 00000C62 E81D030000          <1>  call _save
+   988 00000C67 B8D0000000          <1>  mov eax, interruptId
+   989 00000C6C E9C1020000          <1>  jmp _allInterruptHandlers
+   990                              <1>  %assign interruptId interruptId+1
+   991 00000C71 E80E030000          <1>  call _save
+   992 00000C76 B8D1000000          <1>  mov eax, interruptId
+   993 00000C7B E9B2020000          <1>  jmp _allInterruptHandlers
+   994                              <1>  %assign interruptId interruptId+1
+   995 00000C80 E8FF020000          <1>  call _save
+   996 00000C85 B8D2000000          <1>  mov eax, interruptId
+   997 00000C8A E9A3020000          <1>  jmp _allInterruptHandlers
+   998                              <1>  %assign interruptId interruptId+1
+   999 00000C8F E8F0020000          <1>  call _save
+  1000 00000C94 B8D3000000          <1>  mov eax, interruptId
+  1001 00000C99 E994020000          <1>  jmp _allInterruptHandlers
+  1002                              <1>  %assign interruptId interruptId+1
+  1003 00000C9E E8E1020000          <1>  call _save
+  1004 00000CA3 B8D4000000          <1>  mov eax, interruptId
+  1005 00000CA8 E985020000          <1>  jmp _allInterruptHandlers
+  1006                              <1>  %assign interruptId interruptId+1
+  1007 00000CAD E8D2020000          <1>  call _save
+  1008 00000CB2 B8D5000000          <1>  mov eax, interruptId
+  1009 00000CB7 E976020000          <1>  jmp _allInterruptHandlers
+  1010                              <1>  %assign interruptId interruptId+1
+  1011 00000CBC E8C3020000          <1>  call _save
+  1012 00000CC1 B8D6000000          <1>  mov eax, interruptId
+  1013 00000CC6 E967020000          <1>  jmp _allInterruptHandlers
+  1014                              <1>  %assign interruptId interruptId+1
+  1015 00000CCB E8B4020000          <1>  call _save
+  1016 00000CD0 B8D7000000          <1>  mov eax, interruptId
+  1017 00000CD5 E958020000          <1>  jmp _allInterruptHandlers
+  1018                              <1>  %assign interruptId interruptId+1
+  1019 00000CDA E8A5020000          <1>  call _save
+  1020 00000CDF B8D8000000          <1>  mov eax, interruptId
+  1021 00000CE4 E949020000          <1>  jmp _allInterruptHandlers
+  1022                              <1>  %assign interruptId interruptId+1
+  1023 00000CE9 E896020000          <1>  call _save
+  1024 00000CEE B8D9000000          <1>  mov eax, interruptId
+  1025 00000CF3 E93A020000          <1>  jmp _allInterruptHandlers
+  1026                              <1>  %assign interruptId interruptId+1
+  1027 00000CF8 E887020000          <1>  call _save
+  1028 00000CFD B8DA000000          <1>  mov eax, interruptId
+  1029 00000D02 E92B020000          <1>  jmp _allInterruptHandlers
+  1030                              <1>  %assign interruptId interruptId+1
+  1031 00000D07 E878020000          <1>  call _save
+  1032 00000D0C B8DB000000          <1>  mov eax, interruptId
+  1033 00000D11 E91C020000          <1>  jmp _allInterruptHandlers
+  1034                              <1>  %assign interruptId interruptId+1
+  1035 00000D16 E869020000          <1>  call _save
+  1036 00000D1B B8DC000000          <1>  mov eax, interruptId
+  1037 00000D20 E90D020000          <1>  jmp _allInterruptHandlers
+  1038                              <1>  %assign interruptId interruptId+1
+  1039 00000D25 E85A020000          <1>  call _save
+  1040 00000D2A B8DD000000          <1>  mov eax, interruptId
+  1041 00000D2F E9FE010000          <1>  jmp _allInterruptHandlers
+  1042                              <1>  %assign interruptId interruptId+1
+  1043 00000D34 E84B020000          <1>  call _save
+  1044 00000D39 B8DE000000          <1>  mov eax, interruptId
+  1045 00000D3E E9EF010000          <1>  jmp _allInterruptHandlers
+  1046                              <1>  %assign interruptId interruptId+1
+  1047 00000D43 E83C020000          <1>  call _save
+  1048 00000D48 B8DF000000          <1>  mov eax, interruptId
+  1049 00000D4D E9E0010000          <1>  jmp _allInterruptHandlers
+  1050                              <1>  %assign interruptId interruptId+1
+  1051 00000D52 E82D020000          <1>  call _save
+  1052 00000D57 B8E0000000          <1>  mov eax, interruptId
+  1053 00000D5C E9D1010000          <1>  jmp _allInterruptHandlers
+  1054                              <1>  %assign interruptId interruptId+1
+  1055 00000D61 E81E020000          <1>  call _save
+  1056 00000D66 B8E1000000          <1>  mov eax, interruptId
+  1057 00000D6B E9C2010000          <1>  jmp _allInterruptHandlers
+  1058                              <1>  %assign interruptId interruptId+1
+  1059 00000D70 E80F020000          <1>  call _save
+  1060 00000D75 B8E2000000          <1>  mov eax, interruptId
+  1061 00000D7A E9B3010000          <1>  jmp _allInterruptHandlers
+  1062                              <1>  %assign interruptId interruptId+1
+  1063 00000D7F E800020000          <1>  call _save
+  1064 00000D84 B8E3000000          <1>  mov eax, interruptId
+  1065 00000D89 E9A4010000          <1>  jmp _allInterruptHandlers
+  1066                              <1>  %assign interruptId interruptId+1
+  1067 00000D8E E8F1010000          <1>  call _save
+  1068 00000D93 B8E4000000          <1>  mov eax, interruptId
+  1069 00000D98 E995010000          <1>  jmp _allInterruptHandlers
+  1070                              <1>  %assign interruptId interruptId+1
+  1071 00000D9D E8E2010000          <1>  call _save
+  1072 00000DA2 B8E5000000          <1>  mov eax, interruptId
+  1073 00000DA7 E986010000          <1>  jmp _allInterruptHandlers
+  1074                              <1>  %assign interruptId interruptId+1
+  1075 00000DAC E8D3010000          <1>  call _save
+  1076 00000DB1 B8E6000000          <1>  mov eax, interruptId
+  1077 00000DB6 E977010000          <1>  jmp _allInterruptHandlers
+  1078                              <1>  %assign interruptId interruptId+1
+  1079 00000DBB E8C4010000          <1>  call _save
+  1080 00000DC0 B8E7000000          <1>  mov eax, interruptId
+  1081 00000DC5 E968010000          <1>  jmp _allInterruptHandlers
+  1082                              <1>  %assign interruptId interruptId+1
+  1083 00000DCA E8B5010000          <1>  call _save
+  1084 00000DCF B8E8000000          <1>  mov eax, interruptId
+  1085 00000DD4 E959010000          <1>  jmp _allInterruptHandlers
+  1086                              <1>  %assign interruptId interruptId+1
+  1087 00000DD9 E8A6010000          <1>  call _save
+  1088 00000DDE B8E9000000          <1>  mov eax, interruptId
+  1089 00000DE3 E94A010000          <1>  jmp _allInterruptHandlers
+  1090                              <1>  %assign interruptId interruptId+1
+  1091 00000DE8 E897010000          <1>  call _save
+  1092 00000DED B8EA000000          <1>  mov eax, interruptId
+  1093 00000DF2 E93B010000          <1>  jmp _allInterruptHandlers
+  1094                              <1>  %assign interruptId interruptId+1
+  1095 00000DF7 E888010000          <1>  call _save
+  1096 00000DFC B8EB000000          <1>  mov eax, interruptId
+  1097 00000E01 E92C010000          <1>  jmp _allInterruptHandlers
+  1098                              <1>  %assign interruptId interruptId+1
+  1099 00000E06 E879010000          <1>  call _save
+  1100 00000E0B B8EC000000          <1>  mov eax, interruptId
+  1101 00000E10 E91D010000          <1>  jmp _allInterruptHandlers
+  1102                              <1>  %assign interruptId interruptId+1
+  1103 00000E15 E86A010000          <1>  call _save
+  1104 00000E1A B8ED000000          <1>  mov eax, interruptId
+  1105 00000E1F E90E010000          <1>  jmp _allInterruptHandlers
+  1106                              <1>  %assign interruptId interruptId+1
+  1107 00000E24 E85B010000          <1>  call _save
+  1108 00000E29 B8EE000000          <1>  mov eax, interruptId
+  1109 00000E2E E9FF000000          <1>  jmp _allInterruptHandlers
+  1110                              <1>  %assign interruptId interruptId+1
+  1111 00000E33 E84C010000          <1>  call _save
+  1112 00000E38 B8EF000000          <1>  mov eax, interruptId
+  1113 00000E3D E9F0000000          <1>  jmp _allInterruptHandlers
+  1114                              <1>  %assign interruptId interruptId+1
+  1115 00000E42 E83D010000          <1>  call _save
+  1116 00000E47 B8F0000000          <1>  mov eax, interruptId
+  1117 00000E4C E9E1000000          <1>  jmp _allInterruptHandlers
+  1118                              <1>  %assign interruptId interruptId+1
+  1119 00000E51 E82E010000          <1>  call _save
+  1120 00000E56 B8F1000000          <1>  mov eax, interruptId
+  1121 00000E5B E9D2000000          <1>  jmp _allInterruptHandlers
+  1122                              <1>  %assign interruptId interruptId+1
+  1123 00000E60 E81F010000          <1>  call _save
+  1124 00000E65 B8F2000000          <1>  mov eax, interruptId
+  1125 00000E6A E9C3000000          <1>  jmp _allInterruptHandlers
+  1126                              <1>  %assign interruptId interruptId+1
+  1127 00000E6F E810010000          <1>  call _save
+  1128 00000E74 B8F3000000          <1>  mov eax, interruptId
+  1129 00000E79 E9B4000000          <1>  jmp _allInterruptHandlers
+  1130                              <1>  %assign interruptId interruptId+1
+  1131 00000E7E E801010000          <1>  call _save
+  1132 00000E83 B8F4000000          <1>  mov eax, interruptId
+  1133 00000E88 E9A5000000          <1>  jmp _allInterruptHandlers
+  1134                              <1>  %assign interruptId interruptId+1
+  1135 00000E8D E8F2000000          <1>  call _save
+  1136 00000E92 B8F5000000          <1>  mov eax, interruptId
+  1137 00000E97 E996000000          <1>  jmp _allInterruptHandlers
+  1138                              <1>  %assign interruptId interruptId+1
+  1139 00000E9C E8E3000000          <1>  call _save
+  1140 00000EA1 B8F6000000          <1>  mov eax, interruptId
+  1141 00000EA6 E987000000          <1>  jmp _allInterruptHandlers
+  1142                              <1>  %assign interruptId interruptId+1
+  1143 00000EAB E8D4000000          <1>  call _save
+  1144 00000EB0 B8F7000000          <1>  mov eax, interruptId
+  1145 00000EB5 E978000000          <1>  jmp _allInterruptHandlers
+  1146                              <1>  %assign interruptId interruptId+1
+  1147 00000EBA E8C5000000          <1>  call _save
+  1148 00000EBF B8F8000000          <1>  mov eax, interruptId
+  1149 00000EC4 E969000000          <1>  jmp _allInterruptHandlers
+  1150                              <1>  %assign interruptId interruptId+1
+  1151 00000EC9 E8B6000000          <1>  call _save
+  1152 00000ECE B8F9000000          <1>  mov eax, interruptId
+  1153 00000ED3 E95A000000          <1>  jmp _allInterruptHandlers
+  1154                              <1>  %assign interruptId interruptId+1
+  1155 00000ED8 E8A7000000          <1>  call _save
+  1156 00000EDD B8FA000000          <1>  mov eax, interruptId
+  1157 00000EE2 E94B000000          <1>  jmp _allInterruptHandlers
+  1158                              <1>  %assign interruptId interruptId+1
+  1159 00000EE7 E898000000          <1>  call _save
+  1160 00000EEC B8FB000000          <1>  mov eax, interruptId
+  1161 00000EF1 E93C000000          <1>  jmp _allInterruptHandlers
+  1162                              <1>  %assign interruptId interruptId+1
+  1163 00000EF6 E889000000          <1>  call _save
+  1164 00000EFB B8FC000000          <1>  mov eax, interruptId
+  1165 00000F00 E92D000000          <1>  jmp _allInterruptHandlers
+  1166                              <1>  %assign interruptId interruptId+1
+  1167 00000F05 E87A000000          <1>  call _save
+  1168 00000F0A B8FD000000          <1>  mov eax, interruptId
+  1169 00000F0F E91E000000          <1>  jmp _allInterruptHandlers
+  1170                              <1>  %assign interruptId interruptId+1
+  1171 00000F14 E86B000000          <1>  call _save
+  1172 00000F19 B8FE000000          <1>  mov eax, interruptId
+  1173 00000F1E E90F000000          <1>  jmp _allInterruptHandlers
+  1174                              <1>  %assign interruptId interruptId+1
+  1175 00000F23 E85C000000          <1>  call _save
+  1176 00000F28 B8FF000000          <1>  mov eax, interruptId
+  1177 00000F2D E900000000          <1>  jmp _allInterruptHandlers
+  1178                              <1>  %assign interruptId interruptId+1
+  1179                                  
+  1180                                  _allInterruptHandlers:
+  1181                                  	; llamo al handler de interrupciones universal
+  1182 00000F32 50                      	push eax
+  1183 00000F33 E8(00000000)            	call high_level_handler
+  1184 00000F38 58                      	pop eax
+  1185                                  	
+  1186                                  	; Regreso los valores de contexto al hilo que se va a ejecutar
+  1187 00000F39 E8B0000000              	call _restore
+  1188                                  	; ahora le doy el poder a ese hilo
+  1189 00000F3E CF                      	iret
+  1190                                  	
+  1191                                  low_level_clock_handler:
+  1192 00000F3F E840000000              	call _save
+  1193                                  	;add esp , ecx
+  1194                                  	;push eax	; salvo lo que devolvio _save
+  1195                                  	;;pusha
+  1196                                  
+  1197                                  	;pusha
+  1198                                  	;push 12
+  1199                                  	; las interrupciones estan ahora desabilitas por el procesador
+  1200 00000F44 E8(00000000)            	call high_level_clock_handler
+  1201                                  	; habilito una vez mas las interrupciones en el PIC
+  1202 00000F49 B020                    	mov al , 0x20
+  1203 00000F4B E620                    	out 0x20 , al
+  1204                                  	
+  1205                                  	
+  1206                                  	;;popa
+  1207                                  	;pop eax
+  1208 00000F4D E89C000000              	call _restore
+  1209                                  
+  1210                                  
+  1211                                    ;popa
+  1212 00000F52 CF                      	iret
+  1213                                  	
+  1214                                  low_level_page_fault_handler:
+  1215 00000F53 60                      	pusha
+  1216 00000F54 E8(00000000)            	call high_level_page_fault_handler
+  1217 00000F59 61                      	popa
+  1218 00000F5A CF                      	iret
+  1219                                  
+  1220                                  low_level_general_protection_handler:
+  1221 00000F5B 60                      	pusha
+  1222 00000F5C E8(00000000)            	call high_level_general_protection_handler
+  1223 00000F61 61                      	popa
+  1224 00000F62 CF                      	iret
+  1225                                  
+  1226                                  ; ESTE HANDLER CONTROLA LAS LLAMADAS AL SISTEMA
+  1227                                  ; LOS PARAMETROS (QUE_HACER , help_PId, MSG) estan EDI, EDX y ESI
+  1228                                  ; el supone que _save no cambiara estos registros 	
+  1229                                  low_level_sys_call:
+  1230 00000F63 E81C000000              	call _save
+  1231                                  	; ahora que ya salve el estado de ejecucion del hilo activo se puede hacer lo que sea
+  1232 00000F68 6800000000              	push dword 0
+  1233 00000F6D E8(00000000)            	call microkernel_syscall
+  1234 00000F72 81C404000000            	add esp , 4
+  1235                                  	; ya termine mi trabajo, demosle el poder a otro hilo
+  1236 00000F78 E871000000              	call _restore
+  1237 00000F7D CF                      	iret
+  1238                                  
+  1239                                  ; esta rutina comienza la ejecucion de los hilos del sistema
+  1240                                  ; debe llamarse cuando se termino la configuracion inicial del
+  1241                                  ; microkernel
+  1242                                  activate_multitasking:
+  1243 00000F7E E86B000000              				call _restore
+  1244                                  				; un forma linda de activar las interrupciones y comenzar a ejecutar un hilo
+  1245                                          ; 3
+  1246                                          ; 2
+  1247                                          ; 1
+  1248                                          ; 0
+  1249 00000F83 CF                              iret
+  1250                                  
+  1251                                          
+  1252                                  
+  1253                                  ; salva el estado del hilo activo
+  1254                                  _save:
+  1255 00000F84 56                          push esi
+  1256 00000F85 53                          push ebx
+  1257 00000F86 668CDB                      mov bx, ds
+  1258 00000F89 53                          push ebx
+  1259 00000F8A 66BB1000                    mov bx , 0x10
+  1260 00000F8E 8EDB                        mov ds, bx       ; el selector de KERNEL_DATA_SEGMENT
+  1261 00000F90 5B                          pop ebx
+  1262                                  
+  1263 00000F91 8B35[00000000]              mov esi, dword [activeThread] ; pongo en esi el puntero
+  1264                                  
+  1265 00000F97 8906                        mov dword [esi + 0],    eax
+  1266                                  
+  1267 00000F99 8B442404                    mov eax, dword [esp + 4]              ; estas dos lineas son para salvar ebx
+  1268 00000F9D 894604                      mov dword [esi + 4],    eax
+  1269                                  
+  1270 00000FA0 894E08                      mov dword [esi + 8],    ecx
+  1271 00000FA3 89560C                      mov dword [esi + 12],   edx
+  1272                                  
+  1273 00000FA6 8B442418                    mov eax, dword [esp + 24]             ; estas dos lineas son para salvar esp
+  1274 00000FAA 894610                      mov dword [esi + 16],   eax
+  1275                                  
+  1276 00000FAD 896E14                      mov dword [esi + 20],   ebp
+  1277                                  
+  1278 00000FB0 8B442404                    mov eax, dword [esp + 4]              ; estas dos lineas son para salvar esi
+  1279 00000FB4 894618                      mov dword [esi + 24],   eax
+  1280                                  
+  1281 00000FB7 897E1C                      mov dword [esi + 28],   edi
+  1282                                  
+  1283 00000FBA 8B44240C                    mov eax, dword [esp + 12]             ; estas dos lineas son para salvar eip
+  1284 00000FBE 894620                      mov dword [esi + 32],   eax
+  1285                                  
+  1286 00000FC1 8B442410                    mov eax, dword [esp + 16]             ; estas dos lineas son para salvar cs
+  1287 00000FC5 894624                      mov dword [esi + 36],   eax
+  1288                                  
+  1289 00000FC8 66895E28                    mov word [esi + 40],    bx            ; salvo ds
+  1290                                  
+  1291 00000FCC 8B44241C                    mov eax, dword [esp + 28]             ; estas dos lineas son para salvar ss
+  1292 00000FD0 89462C                      mov dword [esi + 44] ,   eax
+  1293                                  
+  1294 00000FD3 8C4630                      mov word [esi + 48] ,   es
+  1295 00000FD6 8C6634                      mov word [esi + 52] ,   fs
+  1296 00000FD9 8C6E38                      mov word [esi + 56] ,   gs
+  1297                                  
+  1298 00000FDC 8B442414                    mov eax, dword [esp + 20]             ; estas dos lineas son para salvar eflags
+  1299 00000FE0 89463C                      mov dword [esi + 60] ,  eax
+  1300                                  
+  1301                                      ; pongamos el nuevo valor de cr3 para usar el directorio de paginas del kernel
+  1302 00000FE3 A1[04000000]                mov eax , [_hwParameters + 4]
+  1303 00000FE8 0F22D8                      mov cr3 , eax   ; muy lento
+  1304                                  
+  1305 00000FEB 5B                          pop ebx
+  1306 00000FEC 5E                          pop esi
+  1307 00000FED C3                          ret
+  1308                                  
+  1309                                  _restore:
+  1310 00000FEE 8B35[00000000]              mov esi , dword [activeThread] ; pongo en esi el puntero
+  1311                                  
+  1312                                      ; pongamos el nuevo valor de cr3 al directorio de paginas del hilo
+  1313 00000FF4 8B4640                      mov eax , dword [esi + 64]
+  1314 00000FF7 0F22D8                      mov cr3 , eax       ; muy lento
+  1315                                  
+  1316 00000FFA 8B4618                      mov eax , dword [esi + 24]      ; lineas para restaurar esi
+  1317 00000FFD 50                          push eax
+  1318                                  
+  1319 00000FFE 8B4604                      mov eax , dword [esi + 4]       ; lineas para restaurar ebx
+  1320 00001001 50                          push eax
+  1321                                  
+  1322                                      ; empiezo a restaurar valores
+  1323 00001002 8B463C                      mov eax , dword [esi + 60]      ; estas restauran eflags
+  1324 00001005 89442414                    mov dword [esp + 20] , eax
+  1325                                  
+  1326 00001009 8E4630                      mov es , word [esi + 48]
+  1327 0000100C 8E6634                      mov fs , word [esi + 52]
+  1328 0000100F 8E6E38                      mov gs , word [esi + 56]
+  1329                                  		
+  1330                                                        
+  1331 00001012 8B462C                      mov eax , dword [esi + 44]        ; estas restauran ss
+  1332 00001015 8944241C                    mov dword [esp + 28] , eax
+  1333                                  
+  1334 00001019 668B5E28                    mov bx , word [esi + 40]        ; estas son para ds
+  1335                                  
+  1336 0000101D 8B4624                      mov eax , dword [esi + 36]      ; estas cs
+  1337 00001020 89442410                    mov dword [esp + 16] , eax
+  1338                                  
+  1339 00001024 8B4620                      mov eax , dword [esi + 32]      ; estas restauran eip
+  1340 00001027 8944240C                    mov dword [esp + 12] , eax
+  1341                                  
+  1342 0000102B 8B7E1C                      mov edi , dword [esi + 28]
+  1343                                  
+  1344 0000102E 8B6E14                      mov ebp , dword [esi + 20]
+  1345                                  
+  1346 00001031 8B4610                      mov eax , dword [esi + 16]      ; estas restauran esp
+  1347 00001034 89442418                    mov dword [esp + 24] , eax
+  1348                                  
+  1349 00001038 8B4E08                      mov ecx , dword [esi + 8]
+  1350 0000103B 8B560C                      mov edx , dword [esi + 12]
+  1351                                  
+  1352 0000103E 8B06                        mov eax , dword [esi + 0]
+  1353                                  
+  1354 00001040 8EDB                        mov ds, bx
+  1355 00001042 5B                          pop ebx
+  1356 00001043 5E                          pop esi
+  1357 00001044 C3                          ret

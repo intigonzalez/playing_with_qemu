@@ -1,0 +1,40 @@
+ ============================================================================
+ Problema encontrado 1
+ ============================================================================
+	Descripcion : Al pasar a ejecutar la primera tarea de usuario y del sistema
+								se cuelga el sistema.
+								
+	Pasos para arreglarlo:
+				Revision 1
+					- Quitar la paginacion (Done)
+					- Quitar la carga del modulo que representa el servidor raiz (Done)
+					- Poner los descriptores de segmento de los hilos de usuario con:
+							DPL = 3 (DONE)
+							Base = 0 (DONE)
+							Limit = 0xffff (DONE)
+							Tamaño = 4 GB  (DONE)
+					- Agregar una funcion que pase al modo usuario, pero con un codigo que 
+						esta dentro del microkernel, solo para identificar el problema (DONE)
+					- Agregar a los manejadores de fallos y trampas codigo para mostrar el
+						ERROR_CODE y la direccion de la instrucion que provoco el error (DONE)
+				Revision 2
+					- Agregar la carga del modulo que representa el ROOT SERVER.
+						El modulo debe tener una direccion de carga igual de 10 MB. Es
+						necesario mover el modulo a esa posicion y luego saltar ahi.
+					- Usar el sistema de hilos (lo que significa programar el despachador)
+				Revision 3
+					- Poner el ROOT SERVER en el lugar correcto y modificar
+						los descriptores de segmentos del anillo 3 para que comiencen en 
+						12 mb
+					
+						
+	Identificacion del problema :
+				Revision 1
+					- En un primer momento parece ser un problema con el acceso a los
+						selectores de segmento. Al realizar los pasos se encontro que el 
+						sistema se ejecutaba correctamente.
+				Revision 2
+					- Al realizar los cambios se comprobo que el sistema se comportaba de
+						forma estable. puede continuarse
+					
+	Solucion :

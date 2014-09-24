@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CodeLite_Workspace Name="System" Database="./System.tags">
+  <Project Name="MicroKernel" Path="src/MicroKernel/MicroKernel.project" Active="No"/>
+  <Project Name="Kernel" Path="src/Kernel/Kernel.project" Active="No"/>
+  <Project Name="Installer" Path="src/Installer/Installer.project" Active="Yes"/>
+  <Project Name="libc" Path="src/libc/libc.project"/>
+  <Project Name="ramdisksCreator" Path="src/tools/ramdisksCreator.project"/>
+  <Project Name="MyLoader" Path="src/MyLoader/MyLoader.project" Active="No"/>
+  <BuildMatrix>
+    <WorkspaceConfiguration Name="Debug" Selected="yes">
+      <Project Name="ramdisksCreator" ConfigName="Debug"/>
+      <Project Name="MyLoader" ConfigName="Debug"/>
+      <Project Name="MicroKernel" ConfigName="Debug"/>
+      <Project Name="libc" ConfigName="Debug"/>
+      <Project Name="Kernel" ConfigName="Debug"/>
+      <Project Name="Installer" ConfigName="Debug"/>
+    </WorkspaceConfiguration>
+    <WorkspaceConfiguration Name="Release" Selected="no">
+      <Project Name="MicroKernel" ConfigName="Release"/>
+      <Project Name="MicroKernel" ConfigName="Release"/>
+      <Project Name="Kernel" ConfigName="Release"/>
+      <Project Name="Installer" ConfigName="Release"/>
+      <Project Name="libc" ConfigName="Release"/>
+      <Project Name="ramdisksCreator" ConfigName="Release"/>
+      <Project Name="MyLoader" ConfigName="Release"/>
+    </WorkspaceConfiguration>
+  </BuildMatrix>
+</CodeLite_Workspace>

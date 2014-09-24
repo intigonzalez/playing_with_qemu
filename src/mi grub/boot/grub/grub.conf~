@@ -1,0 +1,8 @@
+root (fd0,0)
+timeout = 10
+default = 0
+title NoSe : Veremos
+	kernel --type=multiboot /kernel.img
+	module /Test.img
+	module /Test.img
+	module /Test.img
